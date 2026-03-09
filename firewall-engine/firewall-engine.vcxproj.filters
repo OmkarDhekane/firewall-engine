@@ -21,9 +21,15 @@
     <ClCompile Include="src\tcp\single-threaded-tcp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\tcp\multi-threaded-tcp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\tcp\single-threaded-tcp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tcp\multi-threaded-tcp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

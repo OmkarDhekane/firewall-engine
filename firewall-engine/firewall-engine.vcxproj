@@ -125,9 +125,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\tcp\multi-threaded-tcp.cpp" />
     <ClCompile Include="src\tcp\single-threaded-tcp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\tcp\multi-threaded-tcp.h" />
     <ClInclude Include="include\tcp\single-threaded-tcp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
