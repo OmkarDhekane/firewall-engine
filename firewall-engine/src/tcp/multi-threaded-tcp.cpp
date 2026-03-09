@@ -1,11 +1,27 @@
 #include <iostream>
 #include <WS2tcpip.h> //windosock header
 #include <thread>
+#include <mutex>
+#include "../include/parser/packet_parser.h" // to test and parse packet
 
 #pragma comment (lib, "ws2_32.lib")
-
+std::mutex coutMutex;
 
 using namespace std;
+
+string trim(const string& s) {
+	size_t start = 0;
+	while (start < s.size() && isspace(static_cast<unsigned char>(s[start]))) {
+		start++;
+	}
+
+	size_t end = s.size();
+	while (end > start && isspace(static_cast<unsigned char>(s[end - 1]))) {
+		end--;
+	}
+
+	return s.substr(start, end - start);
+}
 
 void handleClientMulti(SOCKET clientSocket) {
 
@@ -40,8 +56,101 @@ void handleClientMulti(SOCKET clientSocket) {
 
 	// close the socket
 	closesocket(clientSocket);
-
 }
+
+
+void testParser(SOCKET clientSocket) {
+
+	//print the thread info
+	{
+		lock_guard<mutex> lock(coutMutex);
+		cout << "[Thread " << this_thread::get_id() << "] Parser test started" << endl;
+	}
+
+	// keep on reading the stream from client and buffer it
+	char buff[4096];
+	while (true) {
+
+		ZeroMemory(buff, 4096);
+		
+		int bytesReceived = recv(clientSocket, buff, 4096, 0);
+		
+		if (bytesReceived == SOCKET_ERROR) {
+			lock_guard<mutex> lock(coutMutex);
+			cerr << "[Thread " << this_thread::get_id() << "] Error in recv(). Closing client connection" << endl;
+			break;
+		}
+		if (bytesReceived == 0) {
+			lock_guard<mutex> lock(coutMutex); // the lock is released automatically when it scope ends
+			cout << "[Thread " << this_thread::get_id() << "] Client disconnected" << endl;
+			break;
+		}
+
+		string request(buff, bytesReceived);
+		request = trim(request);
+		if (request.empty()) {
+			continue;
+		}
+		{
+			lock_guard<mutex> lock(coutMutex);
+			cout << "[Thread " << std::this_thread::get_id() << "] raw request received" << request << endl;
+		}
+
+		PacketMetadata packet;
+		bool parseOk = false;
+
+		try {
+			parseOk = parsePacket(request, packet);
+		}
+		catch (const exception& e) {
+			string errorMsg = string("error: parse exception: ") + e.what() + "\n";
+			send(clientSocket, errorMsg.c_str(), static_cast<int>(errorMsg.size()), 0);
+			{
+				lock_guard<mutex> lock(coutMutex);
+				cerr << "[Thread " << this_thread::get_id() << "] Parser Exception: " <<e.what() << endl;
+			}
+			continue;
+		}
+
+		if (!parseOk) {
+			std::string errorMsg = "ERROR: malformed packet\n";
+			int bytesSent = send(clientSocket, errorMsg.c_str(), static_cast<int>(errorMsg.size()), 0);
+			if (bytesSent == SOCKET_ERROR) {
+				lock_guard<mutex> lock(coutMutex);
+				cerr << "[Thread " << this_thread::get_id() << "] Error sending malformed packet response" << endl;
+				break;
+			}
+			{
+				lock_guard<mutex> lock(coutMutex);
+				cerr << "[Thread " << this_thread::get_id() << "] Packet parse failed" << endl;
+			}
+			continue;
+		}
+
+		// parsing success and is correct
+		{
+			lock_guard<mutex> lock(coutMutex);
+			cout << "[Thread " << this_thread::get_id() << "] Parsed Packet: " << endl;
+			cout << "  SRC_IP: " << packet.SRC_IP << "\t" << "SRC_PORT: " << packet.SRC_PORT << endl;
+			cout << "  DST_IP: " << packet.DST_IP << "\t" << "DST_PORT: " << packet.DST_PORT << endl;
+			cout << "  PROTOCOL: " << packet.PROTOCOL << endl;
+		}
+
+		// notify client that packet is parsed successfully
+
+		std::string response = "Packet parsed successfully!\n";
+		int bytesSent = send(clientSocket, response.c_str(), static_cast<int>(response.size()), 0);
+		if (bytesSent == SOCKET_ERROR) {
+			lock_guard<mutex> lock(coutMutex);
+			cerr << "[Thread " << this_thread::get_id() << "] Error in send(). Closing the client Connection" << endl;
+			break;
+		}
+
+	}
+	
+	closesocket(clientSocket);
+}
+
 
 int run_multi_threaded_server() {
 
@@ -122,8 +231,14 @@ int run_multi_threaded_server() {
 		}
 		// ####### END This code block exists just to print client's basic info  ####### 
 
+		// single threaded
 		//handleClientMulti(clientSocket);
-		thread t(handleClientMulti, clientSocket);
+		
+		// multi-threaded
+		// thread t(handleClientMulti, clientSocket);
+		// t.detach();
+
+		thread t(testParser, clientSocket);
 		t.detach();
 	}
 

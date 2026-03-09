@@ -125,10 +125,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\parser\packet_parser.cpp" />
     <ClCompile Include="src\tcp\multi-threaded-tcp.cpp" />
     <ClCompile Include="src\tcp\single-threaded-tcp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\firewall\packet_metadata.h" />
+    <ClInclude Include="include\parser\packet_parser.h" />
     <ClInclude Include="include\tcp\multi-threaded-tcp.h" />
     <ClInclude Include="include\tcp\single-threaded-tcp.h" />
   </ItemGroup>
