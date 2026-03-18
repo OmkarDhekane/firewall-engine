@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include "../include/parser/packet_parser.h" // to test and parse packet
+#include "../firewall/firewall_engine.h"
 
 #pragma comment (lib, "ws2_32.lib")
 std::mutex coutMutex;
@@ -127,18 +128,32 @@ void testParser(SOCKET clientSocket) {
 			continue;
 		}
 
+
 		// parsing success and is correct
-		{
+		/*{
 			lock_guard<mutex> lock(coutMutex);
 			cout << "[Thread " << this_thread::get_id() << "] Parsed Packet: " << endl;
 			cout << "  SRC_IP: " << packet.SRC_IP << "\t" << "SRC_PORT: " << packet.SRC_PORT << endl;
 			cout << "  DST_IP: " << packet.DST_IP << "\t" << "DST_PORT: " << packet.DST_PORT << endl;
 			cout << "  PROTOCOL: " << packet.PROTOCOL << endl;
+		}*/
+		RuleEngine engine;
+		RuleDecision decision = engine.evaluate(packet);
+
+		{
+			lock_guard<mutex> lock(coutMutex);
+			cout << "[Thread " <<this_thread::get_id() << "] Parsed Packet:" << endl;
+			cout << "  SRC_IP: " << packet.SRC_IP << "\tSRC_PORT: " << packet.SRC_PORT << endl;
+			cout << "  DST_IP: " << packet.DST_IP << "\tDST_PORT: " << packet.DST_PORT << endl;
+			cout << "  PROTOCOL: " << packet.PROTOCOL << endl;
+			cout << "  Decision: " << decision.action << " (rule_id=" << decision.matchingRuleId << ")" << endl;
 		}
+
 
 		// notify client that packet is parsed successfully
 
-		std::string response = "Packet parsed successfully!\n";
+		string response = "Packet parsed successfully.\t";
+		response +=  decision.action + " rule_id=" + to_string(decision.matchingRuleId) + "\n";
 		int bytesSent = send(clientSocket, response.c_str(), static_cast<int>(response.size()), 0);
 		if (bytesSent == SOCKET_ERROR) {
 			lock_guard<mutex> lock(coutMutex);
@@ -150,6 +165,8 @@ void testParser(SOCKET clientSocket) {
 	
 	closesocket(clientSocket);
 }
+
+
 
 
 int run_multi_threaded_server() {

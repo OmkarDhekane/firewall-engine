@@ -124,12 +124,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\firewall\firewall_engine.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\parser\packet_parser.cpp" />
     <ClCompile Include="src\tcp\multi-threaded-tcp.cpp" />
     <ClCompile Include="src\tcp\single-threaded-tcp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\firewall\firewall_engine.h" />
+    <ClInclude Include="include\firewall\firewall_rule.h" />
     <ClInclude Include="include\firewall\packet_metadata.h" />
     <ClInclude Include="include\parser\packet_parser.h" />
     <ClInclude Include="include\tcp\multi-threaded-tcp.h" />
